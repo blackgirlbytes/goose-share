@@ -10,7 +10,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Health check endpoint
+// Health check endpoints
 app.get('/_status', (req, res) => {
   res.json({
     ok: true,
@@ -18,8 +18,14 @@ app.get('/_status', (req, res) => {
   });
 });
 
-// Simple ping endpoint
-app.get('/api/ping', (req, res) => {
+// Ping endpoints - support both /ping and /api/ping
+app.get('/ping', (req, res) => {
+  res.json({
+    message: 'pong'
+  });
+});
+
+app.get('/api/ping/', (req, res) => {
   res.json({
     message: 'pong'
   });
