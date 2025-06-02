@@ -8,12 +8,13 @@ const nanoid = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLM
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));  // Increased limit for large sessions
 
 // Add logging middleware
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   if (req.method === 'POST') {
+    console.log('Request headers:', req.headers);
     console.log('Request body:', JSON.stringify(req.body, null, 2));
   }
   next();
@@ -64,9 +65,9 @@ app.post('/api/sessions/share', (req, res) => {
       statements.createSession.run(
         share_token,
         created,
-        base_url,
-        working_dir,
-        description,
+        base_url || 'unknown',
+        working_dir || '/',
+        description || 'Shared session',
         message_count,
         total_tokens || null
       );
@@ -75,9 +76,9 @@ app.post('/api/sessions/share', (req, res) => {
       for (const msg of messages) {
         statements.createMessage.run(
           share_token,
-          msg.created,
-          msg.role,
-          JSON.stringify(msg.content)
+          msg.created || Date.now(),
+          msg.role || 'unknown',
+          JSON.stringify(msg.content || [])
         );
       }
     });
