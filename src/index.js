@@ -10,6 +10,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Add logging middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  if (req.method === 'POST') {
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+  }
+  next();
+});
+
 // Health check endpoints
 app.get('/_status', (req, res) => {
   res.json({
@@ -34,15 +43,19 @@ app.get('/api/ping/', (req, res) => {
 // Share a session
 app.post('/api/sessions/share', (req, res) => {
   try {
+    console.log('Received share request');
     const { messages, working_dir, description, base_url, total_tokens } = req.body;
     
     if (!messages || !Array.isArray(messages)) {
+      console.log('Invalid messages array:', messages);
       return res.status(400).json({ error: 'Invalid messages array' });
     }
 
     const share_token = nanoid();
     const created = Date.now();
     const message_count = messages.length;
+
+    console.log('Creating session with token:', share_token);
 
     // Start a transaction
     const db = statements.createSession.database;
@@ -71,11 +84,12 @@ app.post('/api/sessions/share', (req, res) => {
 
     // Execute transaction
     transaction();
+    console.log('Session created successfully');
 
     res.json({ share_token });
   } catch (error) {
     console.error('Error sharing session:', error);
-    res.status(500).json({ error: 'Failed to share session' });
+    res.status(500).json({ error: 'Failed to share session', details: error.message });
   }
 });
 
@@ -83,10 +97,12 @@ app.post('/api/sessions/share', (req, res) => {
 app.get('/api/sessions/share/:share_token', (req, res) => {
   try {
     const { share_token } = req.params;
+    console.log('Getting session:', share_token);
     
     // Get session
     const session = statements.getSession.get(share_token);
     if (!session) {
+      console.log('Session not found:', share_token);
       return res.status(404).json({ error: 'Session not found' });
     }
 
@@ -97,24 +113,27 @@ app.get('/api/sessions/share/:share_token', (req, res) => {
       content: JSON.parse(msg.content)
     }));
 
+    console.log('Session retrieved with', messages.length, 'messages');
     res.json({
       ...session,
       messages
     });
   } catch (error) {
     console.error('Error getting session:', error);
-    res.status(500).json({ error: 'Failed to get session' });
+    res.status(500).json({ error: 'Failed to get session', details: error.message });
   }
 });
 
 // List all shared sessions
 app.get('/api/sessions', (req, res) => {
   try {
+    console.log('Listing all sessions');
     const sessions = statements.listSessions.all();
+    console.log('Found', sessions.length, 'sessions');
     res.json(sessions);
   } catch (error) {
     console.error('Error listing sessions:', error);
-    res.status(500).json({ error: 'Failed to list sessions' });
+    res.status(500).json({ error: 'Failed to list sessions', details: error.message });
   }
 });
 
