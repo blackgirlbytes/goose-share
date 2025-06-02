@@ -41,8 +41,8 @@ app.get('/api/ping/', (req, res) => {
   });
 });
 
-// Share a session
-app.post('/api/sessions/share', (req, res) => {
+// Handle session sharing logic
+const handleSessionShare = async (req, res) => {
   try {
     console.log('Received share request');
     const { messages, working_dir, description, base_url, total_tokens } = req.body;
@@ -92,10 +92,14 @@ app.post('/api/sessions/share', (req, res) => {
     console.error('Error sharing session:', error);
     res.status(500).json({ error: 'Failed to share session', details: error.message });
   }
-});
+};
 
-// Get a shared session
-app.get('/api/sessions/share/:share_token', (req, res) => {
+// Share a session - support both paths
+app.post('/api/sessions/share', handleSessionShare);
+app.post('/sessions/share', handleSessionShare);  // Added this route
+
+// Handle get session logic
+const handleGetSession = async (req, res) => {
   try {
     const { share_token } = req.params;
     console.log('Getting session:', share_token);
@@ -123,10 +127,14 @@ app.get('/api/sessions/share/:share_token', (req, res) => {
     console.error('Error getting session:', error);
     res.status(500).json({ error: 'Failed to get session', details: error.message });
   }
-});
+};
 
-// List all shared sessions
-app.get('/api/sessions', (req, res) => {
+// Get a shared session - support both paths
+app.get('/api/sessions/share/:share_token', handleGetSession);
+app.get('/sessions/share/:share_token', handleGetSession);  // Added this route
+
+// Handle list sessions logic
+const handleListSessions = async (req, res) => {
   try {
     console.log('Listing all sessions');
     const sessions = statements.listSessions.all();
@@ -136,7 +144,11 @@ app.get('/api/sessions', (req, res) => {
     console.error('Error listing sessions:', error);
     res.status(500).json({ error: 'Failed to list sessions', details: error.message });
   }
-});
+};
+
+// List all shared sessions - support both paths
+app.get('/api/sessions', handleListSessions);
+app.get('/sessions', handleListSessions);  // Added this route
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
